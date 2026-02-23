@@ -1,0 +1,52 @@
+name: Bug 回報
+description: 回報審計流程中的錯誤或非預期行為
+labels: ["bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: 問題描述
+      description: 簡述遇到的問題
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 重現步驟
+      description: 如何重現這個問題
+      placeholder: |
+        1. 執行 `/a11y-tw src/...`
+        2. ...
+        3. 看到錯誤 ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 預期行為
+      description: 你預期應該發生什麼
+    validations:
+      required: true
+  - type: input
+    id: claude-code-version
+    attributes:
+      label: Claude Code 版本
+      placeholder: "例：1.0.12"
+  - type: dropdown
+    id: step
+    attributes:
+      label: 發生在哪個步驟
+      options:
+        - Step 1 確認範圍
+        - Step 2 載入參考資源
+        - Step 3a 靜態分析
+        - Step 3b Runtime 驗證
+        - Step 4 產出報告
+        - Step 5 修復
+        - Step 6 再驗證
+        - 不確定
+  - type: textarea
+    id: context
+    attributes:
+      label: 補充資訊
+      description: 錯誤訊息、截圖、相關檔案等

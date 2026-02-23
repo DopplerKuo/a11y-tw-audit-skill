@@ -1,0 +1,36 @@
+name: 功能建議
+description: 建議新功能或改善現有功能
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 問題或需求
+      description: 你想解決什麼問題，或希望改善什麼
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: 建議的做法
+      description: 你希望怎麼解決這個問題
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: 影響範圍
+      options:
+        - 檢查清單（checklist.md）
+        - 元件模式（patterns.md）
+        - 對比度分析（contrast.md）
+        - Runtime 驗證（playwright.md）
+        - 審計流程（SKILL.md）
+        - 報告格式
+        - 修復流程
+        - 其他
+  - type: textarea
+    id: context
+    attributes:
+      label: 補充資訊
+      description: 任何有助於理解需求的額外資訊
