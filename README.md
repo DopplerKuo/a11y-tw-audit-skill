@@ -1,130 +1,175 @@
-# 台灣網站無障礙檢測 Skill for Claude Code
+# 台灣網站無障礙檢測 Skill：Claude Code / Codex
 
-台灣網站無障礙檢測 Skill for Claude Code
+![GitHub Release](https://img.shields.io/github/v/release/DopplerKuo/a11y-tw-audit-skill?label=Release)
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow)
 
-![GitHub Release](https://img.shields.io/github/v/release/DopplerKuo/a11y-tw-audit-skill?label=Release "最新版本")
-![License: MIT](https://img.shields.io/badge/License-MIT-yellow "MIT License")
-![Claude Code Skill](https://img.shields.io/badge/Claude_Code-Skill-6B4FBB "Claude Code Skill")
+a11y-tw 結合靜態分析與瀏覽器驗證，依 WCAG 2.2 AA 與台灣在地檢查項目產出報告並輔助修復。Claude Code 與 Codex 使用相同的流程、60 條檢查清單及元件範例，分別提供 Claude Code 與 Codex 專用版本。
 
-本專案為社群開發的**非官方工具**，與 Anthropic、W3C、數位發展部均無隸屬或背書關係。
+本專案為社群開發的**非官方工具**，與 Anthropic、OpenAI、W3C、數位發展部均無隸屬或背書關係。
 
-a11y-tw 是一個 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) Skill，在 Claude Code 環境中以 `/a11y-tw` 指令呼叫。它結合靜態分析與 Playwright runtime 雙軌驗證，針對 WCAG 2.2 AA 55 條準則與台灣在地規範 5 條（共 60 條檢查項目）進行掃描，產出結構化報告並輔助修復。
+## 選擇版本
 
-## 重要聲明
+|              | Claude Code                 | Codex                             |
+| ------------ | --------------------------- | --------------------------------- |
+| 呼叫方式     | `/a11y-tw`                  | `$a11y-tw`                        |
+| 要複製的目錄 | `claude-code/a11y-tw/`      | `codex/a11y-tw/`                  |
+| 修復防護     | Claude hooks + 共用安全檢查 | 共用安全檢查，不使用 Claude hooks |
+| 觸發設定     | 手動呼叫                    | 可明確呼叫，也保留自動探索設定    |
+| 全域安裝位置 | `~/.claude/skills/a11y-tw`  | `~/.codex/skills/a11y-tw`         |
 
-> **自動化工具只能涵蓋約 30% 的 WCAG 準則。**
->
-> 本工具**不能取代**：
-> - 螢幕閱讀器測試（NVDA、VoiceOver）
-> - 真人使用者測試
-> - 專業無障礙稽核
->
-> **通過本工具的檢測 ≠ 符合無障礙規範。**
->
-> 定位：開發階段的輔助檢查，以及 Freego 機器檢測前的預掃工具。
->
-> **免責聲明**：本工具依據公開規範提供自動化檢測建議，不構成法律或合規意見。使用者應自行判斷檢測結果的適用性，作者不對因使用本工具產生的任何損失負責。
+兩版的修復後再驗證要求相同。文字流程需由代理遵循，不代表 Codex 會執行 Claude hooks。
 
-## 快速開始
+## 安裝：直接複製目錄
 
-### 前置條件
+### Claude Code
 
-- **Claude Code**（需有 Claude Pro / Max / Team / Enterprise 訂閱）
-- **Node.js 18+**（供 Playwright runtime 驗證使用）
+將 repo 裡的 **`claude-code/a11y-tw/`** 複製到本機 **`~/.claude/skills/`**：
 
-### 安裝
-
-將 `a11y-tw/` 目錄複製到你的專案 `.claude/skills/` 下：
-
-```
-your-project/
-└── .claude/
-    └── skills/
-        └── a11y-tw/
-            ├── SKILL.md
-            ├── references/
-            │   ├── checklist.md
-            │   ├── contrast.md
-            │   ├── patterns.md
-            │   └── playwright.md
-            └── README.md
+```text
+~/.claude/skills/a11y-tw/
+├── SKILL.md
+├── references/
+├── README.md
+└── LICENSE
 ```
 
-### 使用方式
+使用 `/a11y-tw` 呼叫。
+
+### Codex
+
+將 repo 裡的 **`codex/a11y-tw/`** 複製到本機 **`~/.codex/skills/`**：
+
+```text
+~/.codex/skills/a11y-tw/
+├── SKILL.md
+├── agents/openai.yaml
+├── references/
+├── README.md
+└── LICENSE
+```
+
+使用 `$a11y-tw` 呼叫。
+
+`~` 是你的使用者家目錄。若 `skills` 資料夾不存在，先建立它；兩版都已包含完整參考文件，不需要複製 repo 內其他目錄，也不需要連結到另一版。請保留 `a11y-tw` 這層目錄，避免複製成 `skills/SKILL.md` 或 `a11y-tw/a11y-tw/SKILL.md`。
+
+更新時以新目錄取代原有的 `a11y-tw`，避免混入舊檔案。若之前曾裝在其他技能搜尋位置（例如 `~/.agents/skills/a11y-tw`）或專案內，請移除重複版本，避免載入到不同內容。安裝後開啟新工作階段，確認能找到技能。
+
+瀏覽器驗證需要可操作瀏覽器的工具及能啟動的目標專案；相關執行環境依工具與專案本身需求準備。沒有瀏覽器工具或伺服器無法啟動時，仍可提供靜態結果，runtime 項目會明確標成未驗證。
+
+## 檢查與更新技能（選用）
+
+另外提供 `a11y-tw-upgrade`，讓 Claude Code 或 Codex 幫你比較官方 repo 與本機的檔案，並依指示更新。它是獨立 skill，由 AI 使用現有 Git 與檔案工具執行流程，不是背景自動更新程式；使用時需要 Git 及網路。
+
+安裝方式同樣是直接複製，放在 `a11y-tw` 旁邊：
+
+| 使用工具 | 額外複製的目錄 | 放到本機的位置 |
+|---|---|---|
+| Claude Code | `claude-code/a11y-tw-upgrade/` | `~/.claude/skills/a11y-tw-upgrade/` |
+| Codex | `codex/a11y-tw-upgrade/` | `~/.codex/skills/a11y-tw-upgrade/` |
+
+先檢查（不修改本機檔案）：
+
+```text
+/a11y-tw-upgrade --check
+```
+
+```text
+$a11y-tw-upgrade --check
+```
+
+要求更新：
+
+```text
+/a11y-tw-upgrade --update
+```
+
+```text
+$a11y-tw-upgrade --update
+```
+
+不加參數也只會檢查。更新預設使用官方 repo 的預設分支，會一併更新同一安裝位置的 `a11y-tw` 與 `a11y-tw-upgrade`。若需要指定分支或 tag，可加 `--ref <名稱>`；不會自動切到開發分支。
+
+偵測到本機修改，或第一次使用而無法辨識哪些差異是本機客製內容時，會先列出差異並詢問是否覆蓋。流程會記錄成功更新的來源及檔案指紋，供下次比對；不會自行更新其他專案或全域設定。更新成功後請開啟新工作階段。
+
+**指定的遠端分支必須已有對應的兩個完整 skill 目錄。** 若功能尚未合併到預設分支，檢查會說明尚不支援並保留本機內容；不會把原本只有 Claude Code 的舊版結構直接覆蓋到 Codex。
+
+## 使用方式
 
 在 Claude Code 中輸入：
 
-```
+```text
 /a11y-tw 幫我檢查所有頁面的無障礙
 /a11y-tw src/components/Modal.tsx
 /a11y-tw --criteria 1.4.3,2.4.7
+/a11y-tw src --exclude "src/admin,**/*.test.tsx"
 ```
 
-## 功能特色
+在 Codex 中輸入：
 
-- **6 步驟結構化審計流程**：範圍確認 → 資源載入 → 靜態分析 → Runtime 驗證 → 報告 → 修復
-- **60 條檢查項目**：WCAG 2.2 AA 55 條 + 台灣在地規範 5 條
-- **靜態 + Runtime 雙軌驗證**：Playwright 瀏覽器自動化 + axe-core 全頁掃描
-- **結構化報告**：統計摘要、失敗 / 警告 / 通過逐條列出、台灣專區獨立呈現
-- **三級修復分類**：🔧 可自動修復 / 🎨 需確認（視覺變更）/ 📝 需手動處理（提供指引）
-- **修復後自動再驗證**：修復完成後自動重新檢查失敗項目
-- **PostToolUse Hook**：每次修復自動審查，防止引入回歸（如意外替換設計 token、引入不必要的 DOM 操作）
-
-## 涵蓋範圍與限制
-
-| 能做 | 不能做 |
-|------|--------|
-| 靜態 HTML / ARIA 屬性檢查 | 螢幕閱讀器實際朗讀效果 |
-| CSS 色彩對比計算（含 oklch、CSS 變數鏈） | 跨頁面導覽一致性（3.2.3 / 3.2.4） |
-| Tab 序列與焦點可見性驗證 | 影片字幕與音訊描述品質 |
-| Reflow 320px 測試 | 認知層面的主觀判斷 |
-| 台灣定位點（`:::`）、Access Key 檢查 | 非 Web 技術（原生 App、桌面應用） |
-| axe-core 全頁掃描 | |
-
-## 檔案結構
-
-```
-a11y-tw/
-├── SKILL.md              # Skill 主體：審計流程、報告模板、修復規則、Hook 定義
-├── references/
-│   ├── checklist.md      # 60 條完整檢查清單（WCAG 2.2 AA 55 條 + 台灣在地 5 條）+ 台灣法規附錄
-│   ├── contrast.md       # 色彩對比靜態分析演算法：CSS 變數解析、oklch 轉換、WCAG 對比度公式
-│   ├── patterns.md       # 17 個 React / Next.js 無障礙元件模式 + SSR / CSR 指引
-│   └── playwright.md     # Playwright MCP 自動驗證操作參考（10 項 runtime 檢查）
-└── README.md
+```text
+$a11y-tw 幫我檢查所有頁面的無障礙
+$a11y-tw src/components/Modal.tsx
+$a11y-tw --criteria 1.4.3,2.4.7
+$a11y-tw src --exclude "src/admin,**/*.test.tsx"
 ```
 
-## 搭配工具
+`--exclude` 接受專案根目錄相對路徑或 glob，多項以逗號分隔，掃描、import 展開、修復與再驗證都維持排除範圍。Skill 會先提供報告，再依授權及修復類型處理；視覺變更需列明影響。
 
-本 Skill 的靜態分析 + Playwright 驗證可涵蓋大部分自動化可偵測的問題。以下工具用於 Skill 無法覆蓋的面向：
+## 功能與限制
 
-| 工具 | 用途 |
-|------|------|
-| **Freego** | 台灣官方機器檢測（申請標章必用，僅 Windows） |
-| **axe DevTools** | 瀏覽器擴充自動偵測 |
-| **NVDA + Firefox** | 螢幕閱讀器測試（台灣審查必用） |
-| **VoiceOver + Safari** | macOS 螢幕閱讀器測試 |
-| **jest-axe** | CI 整合：單元測試中加入 axe-core 檢查 |
-| **eslint-plugin-jsx-a11y** | 開發時即時 linting |
+- 範圍確認 → 靜態分析 → 瀏覽器驗證 → 報告 → 修復 → 再驗證。
+- 60 個既有檢查條目：WCAG 2.2 AA 55 條與台灣在地 5 條。
+- 動態圖片及 CMS 替代文字、複雜圖表等價說明、實際前景／背景對比。
+- 焦點裁切、手機／縮放後導覽、modal 與非 modal 的鍵盤行為。
+- 必填說明、iframe／按鈕名稱與輪播暫停控制。
+- 無 JavaScript 情境只在專案明示要求時另行檢查，不新增通用 TW-06 失敗項。
+
+**通過本工具的檢查不等於符合無障礙規範。** 自動化及 AI 判讀不能取代螢幕閱讀器測試、真人使用者測試或專業稽核；缺乏 runtime 證據的項目不計入通過。本工具不提供法律或合規保證。
 
 ### 螢幕閱讀器手動測試步驟
 
-1. 用 Tab 鍵走完所有互動元素，確認焦點順序與可見性
-2. 測試 Access Key（Alt+U/C/Z）跳到對應區塊
-3. 操作 Modal / Tab / Accordion，確認狀態變更被朗讀
-4. 觸發表單驗證錯誤，確認錯誤訊息被通知、焦點移至第一個錯誤欄位
-5. 確認 `aria-label`、`aria-live` 的實際朗讀效果
+1. 用 Tab 走完互動元素，確認順序、焦點可見性與退出方式。
+2. 測試 Access Key 是否到達對應區塊。
+3. 操作 Modal、Tab、Accordion，確認狀態變更被朗讀。
+4. 觸發表單驗證，確認錯誤訊息及焦點處理。
+5. 確認控制項名稱、動態訊息及跨頁導覽一致性。
 
-## 技術細節
+可搭配 Freego、axe DevTools、NVDA + Firefox、VoiceOver + Safari；工具通過不代表已完成所有人工檢查。
 
-技術文件位於 `references/` 目錄：
+## 目錄與維護
 
-| 檔案 | 內容 |
-|------|------|
-| [`checklist.md`](references/checklist.md) | 60 條檢查清單，含每條準則的檢查方式、自動化程度分級、台灣法規對應 |
-| [`contrast.md`](references/contrast.md) | 色彩對比靜態分析演算法，含 CSS 變數鏈解析與 oklch 色彩空間轉換 |
-| [`patterns.md`](references/patterns.md) | 常見互動元件的無障礙實作模式，含 Modal、Tab、Accordion、Form 等 |
-| [`playwright.md`](references/playwright.md) | Playwright runtime 驗證的操作步驟與判斷邏輯 |
+```text
+a11y-tw-audit-skill/
+├── claude-code/
+│   ├── a11y-tw-upgrade/     # 選用：檢查與更新技能
+│   └── a11y-tw/             # 可直接複製的 Claude Code 版
+│       ├── SKILL.md
+│       ├── references/      # 流程、清單與範例
+│       ├── README.md
+│       └── LICENSE
+└── codex/
+    ├── a11y-tw-upgrade/     # 選用：檢查與更新技能
+    └── a11y-tw/             # 可直接複製的 Codex 版
+        ├── SKILL.md
+        ├── agents/openai.yaml
+        ├── references/      # 相同的流程、清單與範例
+        ├── README.md
+        └── LICENSE
+```
+
+兩版各自附上完整的 `references/`，選擇對應目錄即可直接複製使用。修改規則與執行測試的說明，請見 [貢獻指南](CONTRIBUTING.md)。
+
+## 技術文件
+
+以下連到 Claude Code 版的文件；Codex 版內容相同。
+
+| 文件                                                          | 內容                          |
+| ------------------------------------------------------------- | ----------------------------- |
+| [workflow.md](claude-code/a11y-tw/references/workflow.md)     | 共用流程、修復安全檢查與報告  |
+| [checklist.md](claude-code/a11y-tw/references/checklist.md)   | 60 個檢查條目與台灣實務       |
+| [contrast.md](claude-code/a11y-tw/references/contrast.md)     | 色彩解析與對比計算            |
+| [patterns.md](claude-code/a11y-tw/references/patterns.md)     | 互動元件、動態內容與 SSR 指引 |
+| [playwright.md](claude-code/a11y-tw/references/playwright.md) | 瀏覽器驗證與證據限制          |
 
 ## 參考資料
 
@@ -132,13 +177,27 @@ a11y-tw/
 - [PDIS Freego Implementation Report](https://github.com/PDIS/Freego-Implementation-Report)
 - [WCAG 2.2 Quick Reference](https://www.w3.org/WAI/WCAG22/quickref/?versions=2.2&levels=aaa)
 - [WAI-ARIA Authoring Practices](https://www.w3.org/WAI/ARIA/apg/)
-- [W3C Web Accessibility Laws & Policies — Taiwan](https://www.w3.org/WAI/policies/#taiwan)
-- [Freego 官方網站](https://accessibility.moda.gov.tw/)
 
 ## Contributors
 
-- [@dopplerkuo](https://github.com/dopplerkuo) — 開發與維護
-- [@youxiaaa](https://github.com/youxiaaa) — Review 與測試回饋
+<table>
+  <tr>
+    <td align="center">
+      <a href="https://github.com/dopplerkuo">
+        <img src="https://wsrv.nl/?url=github.com%2Fdopplerkuo.png&amp;w=128&amp;h=128&amp;fit=cover&amp;mask=circle&amp;output=png" width="64" height="64" alt="dopplerkuo 的 GitHub 頭像"><br>
+        <strong>@dopplerkuo</strong>
+      </a><br>
+      開發與維護
+    </td>
+    <td align="center">
+      <a href="https://github.com/youxiaaa">
+        <img src="https://wsrv.nl/?url=github.com%2Fyouxiaaa.png&amp;w=128&amp;h=128&amp;fit=cover&amp;mask=circle&amp;output=png" width="64" height="64" alt="youxiaaa 的 GitHub 頭像"><br>
+        <strong>@youxiaaa</strong>
+      </a><br>
+      Review 與測試回饋
+    </td>
+  </tr>
+</table>
 
 ## 授權
 

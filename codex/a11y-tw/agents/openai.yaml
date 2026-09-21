@@ -1,0 +1,7 @@
+interface:
+  display_name: "A11y TW"
+  short_description: "台灣網站無障礙審計與修復"
+  default_prompt: "Use $a11y-tw to audit this frontend for WCAG 2.2 AA and Taiwan accessibility issues."
+
+policy:
+  allow_implicit_invocation: true

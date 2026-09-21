@@ -41,6 +41,8 @@
 
 ## 2. Modal / Dialog 彈窗
 
+Drawer 不必然是 modal。模態導覽開啟後需合理移入焦點、維持內部 Tab 範圍、提供鍵盤關閉及焦點返回；非模態 disclosure 應允許 Tab 離開，不任意加入 focus trap。優先設定既有元件庫，避免另加全域事件或覆寫 body overflow 破壞原有捲動狀態。參考 [Dialog APG](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/) 與 [Disclosure APG](https://www.w3.org/WAI/ARIA/apg/patterns/disclosure/)。
+
 **關鍵要求**：開啟時 trap focus、關閉時 focus 回到觸發按鈕。
 
 ```tsx
@@ -416,8 +418,14 @@ function announceError(message: string) {
 
 ## 10. 圖片輪播 / Carousel
 
+以下為結構示意，非完整自動播放邏輯。採自動輪播時依 [Carousel APG](https://www.w3.org/WAI/ARIA/apg/patterns/carousel/) 把旋轉控制放在輪播內 Tab 順序前方，焦點進入或滑鼠懸停時停止，焦點離開後不自行恢復；需由使用者重新啟動。
+
 ```tsx
 <div role="region" aria-label="精選圖片" aria-roledescription="carousel">
+  {/* 自動播放必須有暫停按鈕 (2.2.2) */}
+  <button aria-label={paused ? '播放' : '暫停'} onClick={togglePause}>
+    {paused ? <IconPlay /> : <IconPause />}
+  </button>
   <div aria-live="polite">
     <div role="group" aria-label={`第 ${current + 1} 張，共 ${total} 張`}
          aria-roledescription="slide">
@@ -426,10 +434,6 @@ function announceError(message: string) {
   </div>
   <button aria-label="上一張" onClick={prev}><IconChevronLeft /></button>
   <button aria-label="下一張" onClick={next}><IconChevronRight /></button>
-  {/* 自動播放必須有暫停按鈕 (2.2.2) */}
-  <button aria-label={paused ? '播放' : '暫停'} onClick={togglePause}>
-    {paused ? <IconPlay /> : <IconPause />}
-  </button>
 </div>
 ```
 
@@ -741,6 +745,10 @@ function Breadcrumb({ items }: { items: { label: string; href?: string }[] }) {
 
 React/Next.js 的 SSR 與 CSR 在無障礙方面有關鍵差異，審計時需特別注意：
 
+### 專案選用：無 JavaScript 的替代內容
+
+只有專案或驗收明示需求時，另外檢查停用 JavaScript 的使用情境。若採 `<noscript>`，比對伺服器原始 HTML 與停用 JavaScript 後的畫面，確認提示真的輸出、符合頁面語言並提供適用的替代途徑；僅在 client mount 後加入不能證明有效。報告列明需求來源與證據，不因缺少 `<noscript>` 就新增 WCAG 或 TW 合規失敗，也不一律加 `role="alert"`。
+
 ### Hydration 無障礙風險
 
 - **狀態不一致**：伺服器渲染的 HTML 可能缺少客戶端才有的 ARIA 狀態（如 `aria-expanded`）。Hydration 完成前，AT 讀到的狀態可能不正確。
@@ -763,6 +771,12 @@ React/Next.js 的 SSR 與 CSR 在無障礙方面有關鍵差異，審計時需�
 4. Hydration 不一致是否造成 ARIA 屬性閃爍（伺服器端與客戶端值不同）
 
 ---
+
+## 動態內容修復原則
+
+- 圖片：先判斷資訊用途，再於內容來源補上適當替代文字；複雜圖表可用相鄰資料表或完整說明，避免用泛稱填滿 alt。
+- CMS 色彩：追查編輯器、儲存資料、主題及渲染層，於適當的既有管線處理。不要對整段 HTML 全域 regex 替換色碼；同一顏色可能是前景或背景，固定映射不保證對比。既有 HTML 安全清理仍須保留。
+- 焦點：先確認元件庫提供的焦點樣式與容器裁切原因，再調整既有 token／元件；不為修復單一控制項重設全站 outline。
 
 ## 第三方元件庫審計指引
 
