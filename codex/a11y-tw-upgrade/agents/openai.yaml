@@ -1,0 +1,4 @@
+interface:
+  display_name: "A11y TW Upgrade"
+  short_description: "檢查官方版本與本機差異，依指示更新 a11y-tw 並保護本機修改"
+  default_prompt: "使用 $a11y-tw-upgrade 檢查本機 a11y-tw 是否有可用更新，先列出差異，不修改檔案。"

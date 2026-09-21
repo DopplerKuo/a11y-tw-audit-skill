@@ -6,10 +6,11 @@
 
 ## 前置條件
 
-- Playwright MCP 工具可用（`browser_navigate` 等）
+- 下文以 Playwright MCP 工具（`browser_navigate` 等）示例；其他瀏覽器工具須先確認等價能力，不能假設可呼叫同名 API
 - 開發伺服器已啟動（預設 `http://localhost:3000`）
 - 連線方式：`browser_navigate` → 確認頁面載入成功
-- 連線失敗則跳過所有 runtime 驗證，在報告中註記
+- 工具不可用或連線失敗則在報告中列出原因及所有未完成項目，保留靜態結果；需 runtime 的項目不得標成通過
+- 套用主流程的掃描／排除範圍；頁面包含排除元件時註明覆蓋限制，不因 runtime 結果自動擴大修復範圍
 
 ## 準則 → Runtime 檢查對應表
 
@@ -65,11 +66,11 @@ async (page) => {
 }
 ```
 
-拿到 `rgb()` 值後，用 `references/contrast.md` 的公式計算對比度。此步驟可驗證靜態分析的結果，並補足無法靜態解析的色彩組合。
+拿到 `rgb()` 值後，用 `references/contrast.md` 的公式計算對比度。上例只收集元素自身樣式，透明背景不等於白底：須確認祖先、背景圖片及透明度合成後的實際背景。無法確定背景或狀態時保持未驗證，不拿原始色值直接宣稱通過；CMS inline style 也須檢查。
 
 ## 3. 無障礙樹驗證
 
-使用 `browser_snapshot` 取得完整 accessibility tree。
+使用工具實際提供的 accessibility snapshot，記錄其涵蓋範圍；不要假設它是完整瀏覽器無障礙樹。只有 DOM／ARIA 屬性時僅作輔助證據，不能證明計算後名稱、角色或實際播報。狀態訊息的螢幕閱讀器播報仍需人工驗證。
 
 **檢查項目**：
 - 缺少 accessible name 的互動元素（按鈕、連結、表單控制項）
@@ -82,13 +83,13 @@ async (page) => {
 
 **確認**：
 - 順序符合視覺邏輯
-- 無鍵盤困陷（同一元素連續出現 2 次以上）
-- Modal 中額外按 `browser_press_key("Escape")` 確認可關閉
-- 若 50 次 Tab 後仍未完成循環，報告為 🟡 警告（Tab 序列過長）
+- 確認使用者有鍵盤退出方式；重複焦點只是調查線索，單控制項 modal 的 Tab 循環不直接判失敗
+- Modal 中額外按 `browser_press_key("Escape")` 確認可關閉，並驗證開啟時的焦點移入及關閉後焦點返回；非 modal disclosure 應可正常 Tab 離開
+- 若達 50 次 Tab 上限仍未完成，記錄未覆蓋部分，不因頁面長就直接判為準則失敗
 
 ## 5. 焦點可見性驗證
 
-Tab 至各元素 → `browser_take_screenshot` → 確認有可見的 focus outline。
+Tab 至各元素 → `browser_take_screenshot` → 確認有可見的焦點指示器；outline、ring 或其他有效樣式皆可。留意祖先 overflow、圓角及捲動容器裁切，並在行動版與縮放後重驗。
 
 逐一檢查：
 1. 按 Tab 移動焦點

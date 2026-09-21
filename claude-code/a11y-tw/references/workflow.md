@@ -1,47 +1,6 @@
----
-name: a11y-tw
-disable-model-invocation: true
-argument-hint: "[path] [--criteria ids]"
-description: >
-  台灣網站無障礙審計工具。掃描 React/Next.js/HTML，
-  依 WCAG 2.2 AA + 台灣在地規範產出審計報告並輔助修復。
-hooks:
-  PostToolUse:
-    - matcher: "Edit"
-      hooks:
-        - type: prompt
-          prompt: |
-            An a11y audit fix was applied. Review the edit in $ARGUMENTS.
-            Flag (ok=false) if ANY of these are true:
-            1. A named CSS class/variable/token was REPLACED with a hardcoded value (e.g., bg-accent-teal → bg-[#0b7d86])
-            2. DOM manipulation APIs were introduced (MutationObserver, document.title=, window.addEventListener) for something a framework likely handles natively
-            3. An HTML element type was changed (e.g., <p> → <legend>, <div> → <section>) — these have different browser default styles and may break layout
-            4. New code reimplements something visible in the old_string context (e.g., custom focus trap when existing component already handles it)
-            Simple attribute additions (alt, aria-label, role, lang, scope, autocomplete, aria-*) are always ok=true.
-            $ARGUMENTS
-  Stop:
-    - hooks:
-        - type: agent
-          prompt: |
-            The a11y-tw audit skill is finishing. Verify completeness:
-            1. Read Claude's last message. Did it apply any fixes (Edit calls)?
-            2. If fixes were applied, check: was re-verification performed AFTER the fixes?
-               Look for evidence of: re-running checks, Playwright re-tests, or a diff table.
-            3. If fixes applied but NO re-verification done, return ok=false with reason "Re-verification required after fixes."
-            4. If no fixes were applied (report-only), return ok=true.
-            5. If fixes AND re-verification were both done, return ok=true.
-            $ARGUMENTS
----
+# 共用無障礙審計流程
 
-# 台灣無障礙檢測工具（a11y-tw）
-
-## 使用方式
-
-```
-/a11y-tw 幫我檢查所有頁面的無障礙
-/a11y-tw src/components/Modal.tsx
-/a11y-tw --criteria 1.4.3,2.4.7
-```
+本文的 `a11y-tw` 指你使用的工具所對應的指令；Claude Code 使用 `/a11y-tw`，Codex 使用 `$a11y-tw`。`references/...` 與 `README.md` 路徑以安裝後的 skill 根目錄為準，不是受審計專案。
 
 ## 本 Skill 不適用於
 
@@ -75,6 +34,17 @@ hooks:
 
 > **分類原則**：不在上表中的修復，依此判斷 — 🎨 會改變畫面上任何可見像素（顏色、大小、間距、佈局、新增/移除視覺元素）？→ 需確認。🔧 純增刪 HTML 屬性或語意標籤、不改變計算後視覺結果？→ 可自動修復。其餘 → 📝 需手動處理。
 
+### 修復安全檢查
+
+每次套用修復後，先自行檢查該次 diff。若出現下列任一情況，停止並回報風險，不要繼續批次修復：
+
+1. 將既有 CSS class、CSS 變數或 design token 替換成硬編碼值（例如 `bg-accent-teal` → `bg-[#0b7d86]`）。
+2. 為框架可原生處理的問題新增低階 DOM API（如 `MutationObserver`、`document.title =`、`window.addEventListener`）。
+3. 變更 HTML 元素類型且可能影響預設樣式或布局（例如 `<p>` → `<legend>`、`<div>` → `<section>`）。
+4. 重新實作既有元件已提供的能力（例如既有 Modal 已處理 focus trap，卻新增自製 focus trap）。
+
+純增刪 `alt`、`aria-label`、`role`、`lang`、`scope`、`autocomplete`、`aria-*` 等屬性通常屬低風險，但仍需確認不改變既有互動語意。
+
 ## 審計流程
 
 ### Step 1：確認範圍
@@ -83,10 +53,12 @@ hooks:
 
 | 指令 | 範圍 |
 |------|------|
-| `/a11y-tw` | `app/` 或 `pages/` 或 `src/` 整個前端目錄 |
-| `/a11y-tw <path>` | 該路徑下所有 .tsx/.jsx/.html 檔案 |
-| `/a11y-tw <file>` | 單一檔案 + 其 import 的元件 |
-| `/a11y-tw --criteria <ids>` | 全部檔案但只查指定準則 |
+| `a11y-tw` | `app/` 或 `pages/` 或 `src/` 整個前端目錄 |
+| `a11y-tw <path>` | 該路徑下所有 .tsx/.jsx/.html 檔案 |
+| `a11y-tw <file>` | 單一檔案 + 其 import 的元件 |
+| `a11y-tw --criteria <ids>` | 全部檔案但只查指定準則 |
+
+`--exclude` 接受逗號分隔的專案根目錄相對路徑或 glob（含空白或萬用字元時加引號）。目錄包含其子目錄；排除優先於掃描目標及 import 展開，套用至初掃、修復與再驗證。先列出有效範圍與排除項；若排除後沒有檔案，回報並結束。不得因共用元件或全域完整性檢查而默默讀取、修改排除檔案；需要擴大範圍時先取得同意。Runtime 頁面仍可能包含排除元件，須記錄此限制，不能宣稱完整覆蓋或據此修改排除檔案。
 
 使用者可能以自然語言描述掃描目標（如「幫我看 enterprise 與 public 下所有頁面」）。此時：
 1. 從描述中提取關鍵詞，用 Glob 搜尋匹配的目錄或檔案
@@ -109,15 +81,15 @@ hooks:
 
 ### Step 3：掃描
 
-> **⚠️ Step 3 包含 3a 和 3b 兩個子步驟。兩者都必須執行。完成 3a 後必須立刻進入 3b，不得跳過 3b 直接進入 Step 4。**
+> **⚠️ Step 3 包含 3a 和 3b。完成 3a 後必須進入 3b，確認工具與連線是否可用；若不可用，記錄原因及未驗證項目後才能進入 Step 4。不可把未執行的 runtime 檢查標成通過。**
 
 #### Step 3a：靜態分析
 
 依 `references/checklist.md` 排列順序一次掃描全部適用準則：第一原則（可感知）→ 第二原則（可操作）→ 第三原則（可理解）→ 第四原則（穩健性）→ 台灣特有。
 
 對每條準則產出初判結果：
-- **純靜態準則（43 條）**：直接產出最終判定（✅ 通過 / 🔴 失敗 / 🟡 警告）
-- **混合準則（13 條）**：產出靜態初判，標註 `⚠️ 需 runtime 確認`
+- **可由靜態證據判定的項目**：直接產出最終判定（✅ 通過 / 🔴 失敗 / 🟡 警告）
+- **仍需 runtime 證據的項目**：產出靜態初判，標註 `⚠️ 需 runtime 確認`
 
 > **3a 完成條件**：必須對每條適用準則逐一產出判定（✅/🔴/🟡/⚠️），以結構化清單或表格呈現。僅讀取原始碼檔案不算完成 3a — 讀取是準備工作，逐條準則比對並記錄判定才是 3a 的產出。未見到逐條判定結果，不得進入 3b。
 
@@ -153,7 +125,9 @@ hooks:
 
 ##### 2. 啟動與連線
 
-嘗試 `browser_navigate` 至偵測到的 URL：
+先確認可用的瀏覽器工具；以下以 Playwright MCP 名稱示例，使用其他工具時須確認其實際能力，不可假設有同名 API。若無可用工具，runtime 項目標為「未驗證：瀏覽器工具不可用」，進入 Step 4。
+
+工具可用時，嘗試 `browser_navigate` 至偵測到的 URL：
 - **成功** → 讀取 `references/playwright.md`，繼續執行下方批次檢查
 - **失敗（連線拒絕）** → 嘗試用專案的 dev script 啟動開發伺服器（`npm run dev` 或對應指令），等待就緒後重試
 - **啟動後仍失敗** → 全部 runtime 項目標註「僅靜態分析，開發伺服器未啟動」，跳至 Step 4
@@ -178,6 +152,7 @@ Runtime 結果覆寫或補充 Step 3a 的靜態初判：
 - 靜態 `⚠️ 需 runtime 確認` + runtime ✅ → 最終 ✅ 通過
 - 靜態 `⚠️ 需 runtime 確認` + runtime 🔴 → 最終 🔴 失敗
 - 靜態 🔴 失敗（純靜態準則）→ 維持 🔴 失敗
+- runtime 不可用或未完成 → 保留已有證據，需 runtime 的結論維持「未驗證」；不可計入通過。已確認的靜態失敗仍可回報
 
 ##### 錯誤處理
 
@@ -190,13 +165,14 @@ Runtime 結果覆寫或補充 Step 3a 的靜態初判：
 
 ### Step 4：產出報告
 
-> **前置條件：Step 3a 和 3b 都已執行完畢。若 3b 未執行，返回執行 3b。**
+> **前置條件：Step 3a 完成，Step 3b 已執行或已記錄不可用原因與未驗證項目。若尚未確認 3b 可用性，返回執行 3b。**
 
 ```markdown
 # 無障礙審計報告
 
 **審計日期**：YYYY-MM-DD
 **掃描範圍**：[路徑/檔案]
+**排除範圍**：[--exclude 清單／無]
 **目標等級**：WCAG 2.2 AA + 台灣在地規範
 **審計結果**：X 通過 / Y 警告 / Z 失敗
 **驗證覆蓋**：靜態分析 X 條 / runtime 驗證 Y 條 / 僅靜態（runtime 未驗證）Z 條
@@ -288,7 +264,7 @@ Runtime 結果覆寫或補充 Step 3a 的靜態初判：
 
 4. **跨狀態有效**：修復在所有 viewport、互動狀態（hover/focus/active）、顯示條件（responsive breakpoint、條件渲染）下是否仍然有效？是否有功能仍活躍但修復元素被隱藏的情況？
 
-5. **全域完整**：Grep 全專案，確認同一類問題的所有實例都已處理，而非只修了掃描範圍內的檔案。
+5. **範圍內完整**：搜尋已確認且未排除的範圍，確認同類問題均已處理。範圍外依賴或疑似同類問題只回報覆蓋限制，不擅自擴大修復範圍。
 
 審查通過後，若本次有任何 🎨 修復被執行，輸出視覺變更摘要：
 
@@ -301,13 +277,21 @@ Runtime 結果覆寫或補充 Step 3a 的靜態初判：
 
 > **此步驟為必要步驟。Step 5 修復完成後立即自動執行，不需使用者再次下指令。**
 
-1. 僅重新檢查 Step 4 報告中 🔴 失敗與 🟡 警告的準則
+1. 維持 Step 1 的範圍及排除項，重新檢查 Step 4 報告中 🔴 失敗與 🟡 警告的準則；runtime 仍不可用的項目保持未驗證
 2. 重新執行 Step 3a 靜態分析（僅失敗項）
 3. 重新執行 Step 3b runtime 驗證（僅失敗項，若開發伺服器可用）
 4. 產出差異表格（修復前 → 修復後 → 驗證方式）
 5. 若發現回歸問題，立即通知使用者並暫停
 
-> 使用者可要求 `/a11y-tw` 完整重掃（full re-scan），此時重新執行 Step 1–4。
+> 使用者可要求 `a11y-tw` 完整重掃（full re-scan），此時重新執行 Step 1–4。
+
+### 完成前檢查
+
+結束前確認：
+
+1. 若有套用任何修復，必須已執行 Step 6 修復後再驗證，或明確說明哪些 runtime 項目因工具/伺服器不可用而無法驗證。
+2. 最終回覆需包含：掃描範圍、主要失敗/警告數、已修復項目、未修復或需人工驗證項目。
+3. 若只產出報告、未套用修復，可直接結束。
 
 ### 收尾：清理截圖
 
